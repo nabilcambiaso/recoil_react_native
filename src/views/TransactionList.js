@@ -2,7 +2,12 @@ import React, { useEffect } from 'react'
 import { View, Text, TouchableOpacity, ScrollView } from 'react-native'
 import { FontAwesome } from '@expo/vector-icons'
 import { useTransaction } from '../hooks/useTransaction'
-import { gql, useQuery, useMutation } from '@apollo/client';
+import { gql, useQuery, useSubscription,ApolloProvider,ApolloClient,InMemoryCache } from '@apollo/client';
+
+const client = new ApolloClient({
+    uri: 'http://localhost:4000/graphql',
+    cache: new InMemoryCache()
+  });
 
 const QUERY_ALL_TRANSACTIONS = gql`
 query Transactions {
@@ -24,11 +29,34 @@ query Transactions {
 }
 `
 
+const CREATE_TRANSACTION_SUBSCRIPTION = gql`
+subscription Subscription {
+  transactionCreated {
+    account_id
+    amount
+  }
+}
+`
+
 function TransactionList() {
 
 
     const { loading, error, data, refetch } = useQuery(QUERY_ALL_TRANSACTIONS);
     const transactionHook = useTransaction();
+    const { data:SubscriptionData, loading:subscriptionLoading, error:subscriptionError } = useSubscription(CREATE_TRANSACTION_SUBSCRIPTION,{
+        onSubscriptionData:(data)=>{
+            console.warn("here")
+            refetch();
+        }
+    })
+    if(SubscriptionData)
+    {
+        console.log(SubscriptionData)
+    }
+    if(subscriptionError)
+    {
+        console.log("èèrror",subscriptionError)
+    }
 
     useEffect(() => {
         refetch();
@@ -37,6 +65,7 @@ function TransactionList() {
 
     return (
         <View>
+            <ApolloProvider client={client}>
             <ScrollView style={{ padding: 10 }}>
                 {data !== undefined && 
                 data.transactions.transactions.map(({ id, amount, created_at }, index) => (
@@ -62,7 +91,9 @@ function TransactionList() {
                         </View>
                     </View>
                 ))}
+                <View style={{height:300}}><Text> </Text></View>
             </ScrollView>
+            </ApolloProvider>
         </View>
 
     )
