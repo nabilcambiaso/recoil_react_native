@@ -38,7 +38,8 @@ function TransactionList() {
     return (
         <View>
             <ScrollView style={{ padding: 10 }}>
-                {data !== undefined && data.transactions.transactions.map(({ id, amount, created_at }, index) => (
+                {data !== undefined && 
+                data.transactions.transactions.map(({ id, amount, created_at }, index) => (
                     <View style={{ marginTop: 10, backgroundColor: "#E6E6FA", width: "90%", alignSelf: "center", paddingHorizontal: 25, paddingVertical: 5 }} key={index}>
                         <View style={{ flexDirection: "row", alignItems: "center" }}>
                             <View style={{ flexDirection: "row", alignItems: "center" }}>
