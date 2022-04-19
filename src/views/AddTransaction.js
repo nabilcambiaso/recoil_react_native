@@ -3,7 +3,7 @@ import { View, Text, TouchableOpacity, TextInput, FlatList } from 'react-native'
 import { useRecoilValue } from 'recoil';
 import { transactionsListSize } from '../atoms/transactionState';
 import { useTransaction } from '../hooks/useTransaction';
-import { gql, useMutation, useQuery } from '@apollo/client';
+import { gql, useMutation, useQuery,useSubscription } from '@apollo/client';
 import RBSheet from "react-native-raw-bottom-sheet";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { FontAwesome } from '@expo/vector-icons';
@@ -29,8 +29,37 @@ query Accounts {
   }
 }
 `
+const CREATE_ACCOUNT_SUBSCRIPTION = gql`
+subscription Subscription {
+  accountCreated {
+    id
+    name
+    balance
+    initial_balance
+    note
+    opening_date
+    created_at
+    updated_at
+  }
+}
+`
 
 function AddTransaction({ props }) {
+
+    const { data: SubscriptionData,
+        loading: subscriptionLoading,
+        error: subscriptionError
+      } = useSubscription(CREATE_ACCOUNT_SUBSCRIPTION, {
+        onSubscriptionData: (data) => {
+          refetch();
+        }
+      })
+      if (SubscriptionData) {
+        console.log("SubscriptionData")
+      }
+      if (subscriptionError) {
+        console.log(subscriptionError)
+      }
 
     const [createTransaction, { error }] = useMutation(CREATE_TRANSACTION_MUTATION)
     const [account_id, setaccountId] = useState("");
@@ -40,6 +69,8 @@ function AddTransaction({ props }) {
     const listSize = useRecoilValue(transactionsListSize);
     const refRBSheet = useRef();
     const { loading, data, refetch } = useQuery(QUERY_ALL_ACCOUNTS);
+
+    
 
     const renderItem = (itemData) => {
         return (
