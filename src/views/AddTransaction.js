@@ -1,12 +1,17 @@
 import React, { useState, useRef } from 'react'
 import { View, Text, TouchableOpacity, TextInput, FlatList } from 'react-native'
-import { useRecoilValue } from 'recoil';
-import { transactionsListSize } from '../atoms/transactionState';
-import { useTransaction } from '../hooks/useTransaction';
-import { gql, useMutation, useQuery,useSubscription } from '@apollo/client';
+import { gql, useMutation, useQuery, useSubscription } from '@apollo/client';
 import RBSheet from "react-native-raw-bottom-sheet";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { FontAwesome } from '@expo/vector-icons';
+//redux
+import { connect } from 'react-redux';
+import { AddTransactions } from '../redux/actions/transactionAction';
+//recoil
+// import { useRecoilValue } from 'recoil';
+// import { transactionsListSize } from '../atoms/transactionState';
+// import { useTransaction } from '../hooks/useTransaction';
+
 const CREATE_TRANSACTION_MUTATION = gql`
 mutation CreateTransaction($input: createTransactionInput!) {
   createTransaction(input: $input) {
@@ -44,33 +49,34 @@ subscription Subscription {
 }
 `
 
-function AddTransaction({ props }) {
-
+function AddTransaction(props) {
     const { data: SubscriptionData,
         loading: subscriptionLoading,
         error: subscriptionError
-      } = useSubscription(CREATE_ACCOUNT_SUBSCRIPTION, {
+    } = useSubscription(CREATE_ACCOUNT_SUBSCRIPTION, {
         onSubscriptionData: (data) => {
-          refetch();
+            refetch();
         }
-      })
-      if (SubscriptionData) {
-        console.log("SubscriptionData")
-      }
-      if (subscriptionError) {
+    })
+    if (SubscriptionData) {
+        // console.log("SubscriptionData")
+    }
+    if (subscriptionError) {
         console.log(subscriptionError)
-      }
+    }
+
+    //recoil
+    // const transactionHook = useTransaction();
+    // const listSize = useRecoilValue(transactionsListSize);
 
     const [createTransaction, { error }] = useMutation(CREATE_TRANSACTION_MUTATION)
     const [account_id, setaccountId] = useState("");
     const [amount, setAmount] = useState(0);
     const [accountName, setAccountName] = useState("Choose account");
-    const transactionHook = useTransaction();
-    const listSize = useRecoilValue(transactionsListSize);
     const refRBSheet = useRef();
     const { loading, data, refetch } = useQuery(QUERY_ALL_ACCOUNTS);
 
-    
+
 
     const renderItem = (itemData) => {
         return (
@@ -80,14 +86,14 @@ function AddTransaction({ props }) {
                     setaccountId(itemData.item.id)
                     refRBSheet.current.close()
                 }} style={{ flexDirection: "row", width: "100%" }}>
-                    <FontAwesome style={{  paddingTop: 8,paddingRight: 10, width: "15%" }} name="bank" size={12} color="#4DDA54" />
+                    <FontAwesome style={{ paddingTop: 8, paddingRight: 10, width: "15%" }} name="bank" size={12} color="#4DDA54" />
                     <View style={{ width: "45%" }}>
-                        <Text style={{  color: "black", fontSize: 15 }}>{itemData.item.name}</Text>
+                        <Text style={{ color: "black", fontSize: 15 }}>{itemData.item.name}</Text>
                     </View >
                     <View style={{
                         flex: 1, paddingRight: 10, alignItems: "flex- end", width: "43%"
                     }}>
-                        <Text style={{  color: "black", fontSize: 15 }}>
+                        <Text style={{ color: "black", fontSize: 15 }}>
                             {itemData.item.balance}
                         </Text>
                     </View >
@@ -95,7 +101,7 @@ function AddTransaction({ props }) {
             </View >
         );
     }
-    return (<View style={{ flex: 1, paddingTop: 50, }}>
+    return (<View style={{ flex: 1, paddingTop: 50, paddingHorizontal: 20 }}>
         <Text style={{ textAlign: "center", fontWeight: "bold", paddingBottom: 30 }}>Add Transaction</Text>
         <View style={{ minWidth: "90%", height: 200, borderColor: "gray", borderWidth: .7, borderRadius: 10, padding: 10 }}>
             <View style={{ flexDirection: "row", alignItems: "center" }}>
@@ -126,7 +132,7 @@ function AddTransaction({ props }) {
                             ListFooterComponent={<View style={{ height: 10, marginBottom: 10 }}></View>}
                             scrollEnabled={true}
                             key={Math.random()}
-                            data={data!=undefined && data.accounts.accounts}
+                            data={data != undefined && data.accounts.accounts}
                             keyExtractor={(item, index) => {
                                 return index.toString();
                             }}
@@ -165,10 +171,19 @@ function AddTransaction({ props }) {
                 props.navigation.navigate("TransactionList")
             }}
             style={{ marginTop: 20, backgroundColor: "#6495ED", height: 40, paddingHorizontal: 20, justifyContent: "center", alignItems: "center", borderRadius: 10 }}>
-            <Text style={{ color: "white" }}>Show Transactions ({listSize})</Text>
+            <Text style={{ color: "white" }}>Show Transactions</Text>
         </TouchableOpacity>
-
     </View >)
 }
 
-export default AddTransaction
+const mapStatetoProps = (state) => {
+    return {
+        transactionState: state.transactionReducer,
+    }
+}
+const mapDispatchtoProps = (dispatch) => {
+    return {
+        AddTransactions: (txt) => dispatch(AddTransactions(txt)),
+    }
+}
+export default connect(mapStatetoProps, mapDispatchtoProps)(AddTransaction);
