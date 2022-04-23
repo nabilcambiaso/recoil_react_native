@@ -1,19 +1,26 @@
-import React, { useEffect } from 'react'
+import React, { useEffect, useState } from 'react'
 import { View, Text, TouchableOpacity, ScrollView } from 'react-native'
 import { FontAwesome } from '@expo/vector-icons'
-import { gql, useQuery, useSubscription, ApolloProvider, ApolloClient, InMemoryCache } from '@apollo/client';
-import { useNetInfo } from '@react-native-community/netinfo';
+import { gql, useQuery, useMutation, useSubscription, ApolloProvider, ApolloClient, InMemoryCache } from '@apollo/client';
+import NetInfo from '@react-native-community/netinfo';
 //redux
 import { connect } from 'react-redux';
-import { AddTransactions } from '../redux/actions/transactionAction';
-//recoil
-// import { useTransaction } from '../hooks/useTransaction'
+import { AddTransactions, ClearTransactions } from '../redux/actions/transactionAction';
 
 const client = new ApolloClient({
-    uri: 'http://localhost:4000/graphql',
+    uri: 'http://192.168.1.102:4000/graphql',
     cache: new InMemoryCache()
 });
 
+const CREATE_TRANSACTION_MUTATION = gql`
+mutation CreateTransaction($input: createTransactionInput!) {
+  createTransaction(input: $input) {
+    id
+    account_id
+    amount
+  }
+}
+`
 const QUERY_ALL_TRANSACTIONS = gql`
 query Transactions {
   transactions {
@@ -45,21 +52,44 @@ subscription Subscription {
 
 function TransactionList(props) {
 
-    //recoil
-    // const transactionHook = useTransaction();
     const { loading, error, data, refetch } = useQuery(QUERY_ALL_TRANSACTIONS);
-    const netinfo = useNetInfo();
+    const [createTransaction, { error: mutationError }] = useMutation(CREATE_TRANSACTION_MUTATION)
 
-  
-useEffect(() => {
-    if (netinfo.isConnected) {
-        if(data)
-        props.AddTransactions(data.transactions.transactions)
-    }
-    netinfo.isConnected ? console.warn("connected") : console.warn("not");
+    const [isOffline, setOfflineStatus] = useState(false);
 
-}, [data])
+    useEffect(() => {
+        console.log("first")
+        NetInfo.addEventListener(async (state) => {
+            const offline = !(state.isConnected && state.isInternetReachable);
+            setOfflineStatus(offline);
+            if (!offline) {
+                if (data) {
+                    var offline_transactions = props.transactionState.transactions.filter(function (tr) {
+                        return tr.is_offline == "true"
+                    });
+                    // var online_transactions = props.transactionState.transactions.filter(function (tr) {
+                    //     return tr.is_offline != "true"
+                    // });
+                    props.ClearTransactions();
+                    //  props.AddTransactions(online_transactions);
+                    offline_transactions.forEach(element => {
+                        var account_id = element.account_id;
+                        var amount = element.amount
+                        createTransaction({
+                            variables: {
+                                input: {
+                                    account_id,
+                                    amount
+                                }
+                            }
+                        })
+                    });
 
+                    props.AddTransactions(data.transactions.transactions)
+                }
+            }
+        });
+    }, [isOffline,props.transactionState.transactions.length]);
 
 
     const { data: SubscriptionData, loading: subscriptionLoading, error: subscriptionError } = useSubscription(CREATE_TRANSACTION_SUBSCRIPTION, {
@@ -77,16 +107,14 @@ useEffect(() => {
     useEffect(() => {
         refetch();
     }, [])
-
+    //console.log(props.transactionState.transactions)
 
     return (
         <View>
             <ApolloProvider client={client}>
                 <ScrollView style={{ padding: 10 }}>
                     {
-                        console.log("first", props.transactionState.transactions),
-                        props.transactionState.transactions.map(({ id, amount, created_at }, index) => (
-                            console.log(id),
+                        props.transactionState.transactions.length != 0 && props.transactionState.transactions.map(({ id, amount, created_at }, index) => (
                             <View style={{ marginTop: 10, backgroundColor: "#E6E6FA", width: "90%", alignSelf: "center", paddingHorizontal: 25, paddingVertical: 5 }} key={index}>
                                 <View style={{ flexDirection: "row", alignItems: "center" }}>
                                     <View style={{ flexDirection: "row", alignItems: "center" }}>
@@ -94,9 +122,7 @@ useEffect(() => {
                                         <Text>{id}</Text>
                                     </View>
                                     <TouchableOpacity
-                                        onPress={() => {
-                                            // transactionHook.deleteTransaction(id)
-                                        }}
+                                        onPress={() => { }}
                                         style={{ marginLeft: "auto", justifyContent: "center", paddingTop: 10 }}>
                                         <FontAwesome name="trash" size={24} color="#8B0000" />
                                     </TouchableOpacity>
@@ -127,6 +153,7 @@ const mapStatetoProps = (state) => {
 const mapDispatchtoProps = (dispatch) => {
     return {
         AddTransactions: (transactions) => dispatch(AddTransactions(transactions)),
+        ClearTransactions: () => dispatch(ClearTransactions()),
     }
 }
 export default connect(mapStatetoProps, mapDispatchtoProps)(TransactionList);

@@ -1,5 +1,4 @@
-import Main from './src/Main';
-
+import React, { useEffect, useState } from 'react';
 import { NavigationContainer } from '@react-navigation/native';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import TransactionList from './src/views/TransactionList';
@@ -7,24 +6,22 @@ import AddTransaction from './src/views/AddTransaction';
 import { ApolloClient, InMemoryCache, ApolloProvider, HttpLink, split } from '@apollo/client';
 import { WebSocketLink } from '@apollo/client/link/ws';
 import { getMainDefinition } from '@apollo/client/utilities'
-import { useNetInfo } from '@react-native-community/netinfo';
-var Environment = require('./environment');
-//recoil
-import { RecoilRoot } from 'recoil';
 //redux
 import { Provider } from 'react-redux';
 import stores from './src/redux/store';
 import { PersistGate } from 'redux-persist/integration/react';
 const { store, persistor } = stores();
 
+
+const URL='192.168.1.102:4000';
 //create http link
 const httpLink = new HttpLink({
-  uri: `http://localhost:4000/graphql`
+  uri: `http://${URL}/graphql`
 })
 
 // create web socket link
 const wsLink = new WebSocketLink({
-  uri: 'ws://localhost:4000/graphql',
+  uri:`ws://${URL}/graphql`,
   options: {
     reconnect: true
   }
@@ -53,8 +50,7 @@ const client = new ApolloClient({
 
 export default function App() {
   const Stack = createNativeStackNavigator();
-  const netinfo = useNetInfo();
-  console.warn(netinfo.isInternetReachable?"connected":"lost connection")
+
   return (
     // <RecoilRoot>
     <Provider store={store}>
@@ -62,17 +58,17 @@ export default function App() {
         loading={null} persistor={persistor}
       >
         <ApolloProvider client={client}>
+
           <NavigationContainer>
+
             <Stack.Navigator initialRouteName='AddTransaction'>
               <Stack.Screen name="AddTransaction" component={AddTransaction} />
               <Stack.Screen name="TransactionList" component={TransactionList} />
             </Stack.Navigator>
           </NavigationContainer>
+         
         </ApolloProvider>
       </PersistGate>
     </Provider>
-    // </RecoilRoot>
   );
 }
-
-

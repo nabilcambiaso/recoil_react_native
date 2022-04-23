@@ -1,16 +1,15 @@
-import React, { useState, useRef } from 'react'
-import { View, Text, TouchableOpacity, TextInput, FlatList } from 'react-native'
+import React, { useState, useRef, useEffect } from 'react'
+import { View, Text, TouchableOpacity, TextInput, FlatList, Alert } from 'react-native'
 import { gql, useMutation, useQuery, useSubscription } from '@apollo/client';
 import RBSheet from "react-native-raw-bottom-sheet";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { FontAwesome } from '@expo/vector-icons';
+import NetInfo from '@react-native-community/netinfo';
 //redux
 import { connect } from 'react-redux';
-import { AddTransactions } from '../redux/actions/transactionAction';
-//recoil
-// import { useRecoilValue } from 'recoil';
-// import { transactionsListSize } from '../atoms/transactionState';
-// import { useTransaction } from '../hooks/useTransaction';
+import { AddTransactions,AddNewTransaction } from '../redux/actions/transactionAction';
+import { AddAccount } from '../redux/actions/accountAction';
+import { Snackbar } from 'react-native-paper';
 
 const CREATE_TRANSACTION_MUTATION = gql`
 mutation CreateTransaction($input: createTransactionInput!) {
@@ -48,35 +47,39 @@ subscription Subscription {
   }
 }
 `
-
 function AddTransaction(props) {
-    const { data: SubscriptionData,
-        loading: subscriptionLoading,
-        error: subscriptionError
-    } = useSubscription(CREATE_ACCOUNT_SUBSCRIPTION, {
+    // graphs
+    const { data: SubscriptionData, loading: subscriptionLoading, error: subscriptionError } = useSubscription(CREATE_ACCOUNT_SUBSCRIPTION, {
         onSubscriptionData: (data) => {
             refetch();
         }
     })
-    if (SubscriptionData) {
-        // console.log("SubscriptionData")
-    }
-    if (subscriptionError) {
-        console.log(subscriptionError)
-    }
-
-    //recoil
-    // const transactionHook = useTransaction();
-    // const listSize = useRecoilValue(transactionsListSize);
-
     const [createTransaction, { error }] = useMutation(CREATE_TRANSACTION_MUTATION)
+    const { loading, data, refetch } = useQuery(QUERY_ALL_ACCOUNTS);
+
+    // states
     const [account_id, setaccountId] = useState("");
     const [amount, setAmount] = useState(0);
     const [accountName, setAccountName] = useState("Choose account");
     const refRBSheet = useRef();
-    const { loading, data, refetch } = useQuery(QUERY_ALL_ACCOUNTS);
+    const [isOffline, setOfflineStatus] = useState(false);
+    const [visible, setVisible] = React.useState(false);
 
+    // logic
+    const onToggleSnackBar = () => setVisible(!visible);
+    const onDismissSnackBar = () => setVisible(false);
 
+    useEffect(() => {
+        NetInfo.addEventListener((state) => {
+            const offline = !(state.isConnected && state.isInternetReachable);
+            setOfflineStatus(offline);
+            if (!offline) {
+                //fill state with accounts
+                if (data)
+                    props.AddAccount(data.accounts.accounts)
+            }
+        });
+    }, [isOffline]);
 
     const renderItem = (itemData) => {
         return (
@@ -101,89 +104,112 @@ function AddTransaction(props) {
             </View >
         );
     }
-    return (<View style={{ flex: 1, paddingTop: 50, paddingHorizontal: 20 }}>
-        <Text style={{ textAlign: "center", fontWeight: "bold", paddingBottom: 30 }}>Add Transaction</Text>
-        <View style={{ minWidth: "90%", height: 200, borderColor: "gray", borderWidth: .7, borderRadius: 10, padding: 10 }}>
-            <View style={{ flexDirection: "row", alignItems: "center" }}>
-                <Text style={{ fontWeight: "bold", marginRight: 10 }}>Account Name: </Text>
-                <TouchableOpacity onPress={() => refRBSheet.current.open()}><Text>{accountName}</Text></TouchableOpacity>
-                <RBSheet
-                    ref={refRBSheet}
-                    closeOnDragDown={true}
-                    closeOnPressMask={false}
-                    customStyles={{
-                        wrapper: {
-                            backgroundColor: "rgba(128, 128, 128, 0.7)"
-                        },
-                        draggableIcon: {
-                            backgroundColor: "#000"
-                        }
-                    }}
-                >
-                    <SafeAreaView
-                        style={{
-                            backgroundColor: "white",
-                            borderTopRightRadius: 10,
-                            borderTopLeftRadius: 10
-                        }}
-                    >
 
-                        <FlatList
-                            ListFooterComponent={<View style={{ height: 10, marginBottom: 10 }}></View>}
-                            scrollEnabled={true}
-                            key={Math.random()}
-                            data={data != undefined && data.accounts.accounts}
-                            keyExtractor={(item, index) => {
-                                return index.toString();
+    return (
+        <View style={{ flex: 1, paddingTop: 50, paddingHorizontal: 20 }}>
+            <View>
+                <Text style={{ textAlign: "center", fontWeight: "bold", paddingBottom: 30 }}>Add Transaction</Text>
+                <View style={{ minWidth: "90%", height: 200, borderColor: "gray", borderWidth: .7, borderRadius: 10, padding: 10 }}>
+                    <View style={{ flexDirection: "row", alignItems: "center" }}>
+                        <Text style={{ fontWeight: "bold", marginRight: 10 }}>Account Name: </Text>
+                        <TouchableOpacity onPress={() => refRBSheet.current.open()}><Text>{accountName}</Text></TouchableOpacity>
+                        <RBSheet
+                            ref={refRBSheet}
+                            closeOnDragDown={true}
+                            closeOnPressMask={false}
+                            customStyles={{
+                                wrapper: {
+                                    backgroundColor: "rgba(128, 128, 128, 0.7)"
+                                },
+                                draggableIcon: {
+                                    backgroundColor: "#000"
+                                }
                             }}
-                            renderItem={(itemData) => renderItem(itemData)}
-                            showsVerticalScrollIndicator={false}
-                        />
+                        >
+                            <SafeAreaView
+                                style={{
+                                    backgroundColor: "white",
+                                    borderTopRightRadius: 10,
+                                    borderTopLeftRadius: 10
+                                }}
+                            >
+                                <FlatList
+                                    ListFooterComponent={<View style={{ height: 10, marginBottom: 10 }}></View>}
+                                    scrollEnabled={true}
+                                    key={Math.random()}
+                                    data={props.accountState.accounts}
+                                    keyExtractor={(item, index) => {
+                                        return index.toString();
+                                    }}
+                                    renderItem={(itemData) => renderItem(itemData)}
+                                    showsVerticalScrollIndicator={false}
+                                />
 
-                    </SafeAreaView>
+                            </SafeAreaView>
 
 
-                </RBSheet>
-            </View>
+                        </RBSheet>
+                    </View>
 
-            <View style={{ flexDirection: "row", alignItems: "center", marginVertical: 15 }}>
-                <Text style={{ fontWeight: "bold", marginRight: 10 }}>Amount: </Text>
-                <TextInput style={{ height: 30, borderBottomWidth: .6, borderBottomColor: "gray", width: 200 }}
-                    placeholder='enter Amount' value={amount.toString()} onChange={(e) => setAmount(Number(e.nativeEvent.text))} ></TextInput>
-            </View>
-            <TouchableOpacity
-                onPress={() => {
-                    createTransaction({
-                        variables: {
-                            input: {
-                                account_id,
-                                amount
+                    <View style={{ flexDirection: "row", alignItems: "center", marginVertical: 15 }}>
+                        <Text style={{ fontWeight: "bold", marginRight: 10 }}>Amount: </Text>
+                        <TextInput style={{ height: 30, borderBottomWidth: .6, borderBottomColor: "gray", width: 200 }}
+                            placeholder='enter Amount' value={amount.toString()} onChange={(e) => setAmount(Number(e.nativeEvent.text))} ></TextInput>
+                    </View>
+                    <TouchableOpacity
+                        onPress={async() => {
+                            if (isOffline) {
+                                await props.AddNewTransaction(account_id,amount,"true")
+                            } else {
+                                console.log("first_______________________________")
+                                createTransaction({
+                                    variables: {
+                                        input: {
+                                            account_id,
+                                            amount
+                                        }
+                                    }
+                                })
                             }
-                        }
-                    })
-                }}
-                style={{ marginTop: 20, backgroundColor: "#20B2AA", height: 40, paddingHorizontal: 20, justifyContent: "center", alignItems: "center", borderRadius: 10 }}>
-                <Text style={{ color: "white" }}>Add Transaction</Text>
-            </TouchableOpacity>
-        </View>
-        <TouchableOpacity
-            onPress={() => {
-                props.navigation.navigate("TransactionList")
-            }}
-            style={{ marginTop: 20, backgroundColor: "#6495ED", height: 40, paddingHorizontal: 20, justifyContent: "center", alignItems: "center", borderRadius: 10 }}>
-            <Text style={{ color: "white" }}>Show Transactions</Text>
-        </TouchableOpacity>
-    </View >)
+                        }}
+                        style={{ marginTop: 20, backgroundColor: "#20B2AA", height: 40, paddingHorizontal: 20, justifyContent: "center", alignItems: "center", borderRadius: 10 }}>
+                        <Text style={{ color: "white" }}>Add Transaction</Text>
+                    </TouchableOpacity>
+                </View>
+                <TouchableOpacity
+                    onPress={() => {
+                        props.navigation.navigate("TransactionList")
+                    }}
+                    style={{ marginTop: 20, backgroundColor: "#6495ED", height: 40, paddingHorizontal: 20, justifyContent: "center", alignItems: "center", borderRadius: 10 }}>
+                    <Text style={{ color: "white" }}>Show Transactions</Text>
+                </TouchableOpacity>
+            </View>
+            {isOffline &&
+                <Snackbar
+                    visible={true}
+                    onDismiss={onDismissSnackBar}
+                    action={{
+                        label: 'Undo',
+                        onPress: () => {
+                            // setOfflineStatus(false)
+                        },
+                    }}>
+                    You are currenty offline.
+                </Snackbar>}
+        </View >)
 }
 
 const mapStatetoProps = (state) => {
     return {
         transactionState: state.transactionReducer,
+        accountState: state.accountReducer,
     }
 }
 const mapDispatchtoProps = (dispatch) => {
     return {
-        AddTransactions: (txt) => dispatch(AddTransactions(txt)),
+        AddNewTransaction: (account_id,amount,is_offline) => dispatch(AddNewTransaction(account_id,amount,is_offline)),
+        AddAccount: (account) => dispatch(AddAccount(account))
+        
     }
 }
 export default connect(mapStatetoProps, mapDispatchtoProps)(AddTransaction);
