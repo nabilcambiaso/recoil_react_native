@@ -27,7 +27,8 @@ const transactionReducer = (state = initialState, action) => {
             });
             return {
                 ...state,
-                transactions: [...offline_transactions, ...action.payload]
+                transactions: [...action.payload]
+                // transactions: [...offline_transactions, ...action.payload]
             }
         case CLEAR_TRANSACTIONS:
             return {

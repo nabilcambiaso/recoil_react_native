@@ -28,7 +28,8 @@ const appReducer = combineReducers({
 const persistedReducer = persistReducer(persistConfig,rootReducer);
 
 export default () =>{
-    let store=createStore(persistedReducer,applyMiddleware(thunk));
+    // let store=createStore(rootReducer,applyMiddleware(thunk));
+   let store=createStore(persistedReducer,applyMiddleware(thunk));
     let persistor = persistStore(store);
     return {store,persistor,persistConfig}
 }

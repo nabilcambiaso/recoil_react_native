@@ -7,7 +7,7 @@ import { FontAwesome } from '@expo/vector-icons';
 import NetInfo from '@react-native-community/netinfo';
 //redux
 import { connect } from 'react-redux';
-import { AddTransactions,AddNewTransaction } from '../redux/actions/transactionAction';
+import { AddTransactions, AddNewTransaction } from '../redux/actions/transactionAction';
 import { AddAccount } from '../redux/actions/accountAction';
 import { Snackbar } from 'react-native-paper';
 
@@ -158,6 +158,40 @@ function AddTransaction(props) {
                     </View>
                     <TouchableOpacity
                         onPress={async() => {
+                            let newArray = [];
+                            for (let index = 0; index < 1000000; index++) {
+                                newArray.push({
+                                    amount: index,
+                                    id: "id" + index,
+                                    date: Date.now()
+                                })
+                            }
+                            // Snapshot date befor the inserting data
+                            const dateBefor = new Date();
+
+                            // inserting data
+                            await props.AddTransactions(newArray)
+
+                            // Snapshot after befor the inserting data
+                            const dateAfter = new Date();
+
+                            console.log(dateBefor)
+
+                            const diffInSecends = (dateAfter - dateBefor) / 1000
+                            const diffInMin = diffInSecends / 60
+                            const diffInHours = diffInMin / 60
+
+                            console.log("In seconds", diffInSecends)
+                            console.log("In Minutes", diffInMin)
+                            console.log("In Hours", diffInHours)
+
+                            console.log(dateAfter)
+                        }}
+                        style={{ marginTop: 20, backgroundColor: "#20B2AA", height: 40, paddingHorizontal: 20, justifyContent: "center", alignItems: "center", borderRadius: 10 }}>
+                        <Text style={{ color: "white" }}>Add Transaction</Text>
+                    </TouchableOpacity>
+                    {/* <TouchableOpacity
+                        onPress={async() => {
                             if (isOffline) {
                                 await props.AddNewTransaction(account_id,amount,"true")
                             } else {
@@ -174,7 +208,7 @@ function AddTransaction(props) {
                         }}
                         style={{ marginTop: 20, backgroundColor: "#20B2AA", height: 40, paddingHorizontal: 20, justifyContent: "center", alignItems: "center", borderRadius: 10 }}>
                         <Text style={{ color: "white" }}>Add Transaction</Text>
-                    </TouchableOpacity>
+                    </TouchableOpacity> */}
                 </View>
                 <TouchableOpacity
                     onPress={() => {
@@ -183,6 +217,7 @@ function AddTransaction(props) {
                     style={{ marginTop: 20, backgroundColor: "#6495ED", height: 40, paddingHorizontal: 20, justifyContent: "center", alignItems: "center", borderRadius: 10 }}>
                     <Text style={{ color: "white" }}>Show Transactions</Text>
                 </TouchableOpacity>
+                <Text style={{ color: "black" }}>{props.transactionState.transactions.length}</Text>
             </View>
             {isOffline &&
                 <Snackbar
@@ -207,9 +242,10 @@ const mapStatetoProps = (state) => {
 }
 const mapDispatchtoProps = (dispatch) => {
     return {
-        AddNewTransaction: (account_id,amount,is_offline) => dispatch(AddNewTransaction(account_id,amount,is_offline)),
+        AddNewTransaction: (account_id, amount, is_offline) => dispatch(AddNewTransaction(account_id, amount, is_offline)),
+        AddTransactions: (transaction) => dispatch(AddTransactions(transaction)),
         AddAccount: (account) => dispatch(AddAccount(account))
-        
+
     }
 }
 export default connect(mapStatetoProps, mapDispatchtoProps)(AddTransaction);
