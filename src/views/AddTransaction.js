@@ -75,8 +75,8 @@ function AddTransaction(props) {
             setOfflineStatus(offline);
             if (!offline) {
                 //fill state with accounts
-                if (data)
-                    props.AddAccount(data.accounts.accounts)
+                // if (data)
+                    // props.AddAccount(data.accounts.accounts)
             }
         });
     }, [isOffline]);
@@ -159,18 +159,18 @@ function AddTransaction(props) {
                     <TouchableOpacity
                         onPress={async() => {
                             let newArray = [];
-                            for (let index = 0; index < 1000000; index++) {
-                                newArray.push({
-                                    amount: index,
-                                    id: "id" + index,
-                                    date: Date.now()
-                                })
-                            }
+                            // for (let index = 0; index < 1000000; index++) {
+                            //     newArray.push({
+                            //         amount: index,
+                            //         id: "id" + index,
+                            //         date: Date.now()
+                            //     })
+                            // }
                             // Snapshot date befor the inserting data
                             const dateBefor = new Date();
 
                             // inserting data
-                            await props.AddTransactions(newArray)
+                            // await props.AddTransactions(newArray)
 
                             // Snapshot after befor the inserting data
                             const dateAfter = new Date();
@@ -216,6 +216,13 @@ function AddTransaction(props) {
                     }}
                     style={{ marginTop: 20, backgroundColor: "#6495ED", height: 40, paddingHorizontal: 20, justifyContent: "center", alignItems: "center", borderRadius: 10 }}>
                     <Text style={{ color: "white" }}>Show Transactions</Text>
+                </TouchableOpacity>
+                <TouchableOpacity
+                    onPress={() => {
+                        props.navigation.navigate("DisplayHugeList")
+                    }}
+                    style={{ marginTop: 20, backgroundColor: "#6495EF", height: 40, paddingHorizontal: 20, justifyContent: "center", alignItems: "center", borderRadius: 10 }}>
+                    <Text style={{ color: "white" }}>Display Huge List</Text>
                 </TouchableOpacity>
                 <Text style={{ color: "black" }}>{props.transactionState.transactions.length}</Text>
             </View>

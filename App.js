@@ -3,6 +3,7 @@ import { NavigationContainer } from '@react-navigation/native';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import TransactionList from './src/views/TransactionList';
 import AddTransaction from './src/views/AddTransaction';
+import DisplayHugeList from './src/views/DisplayHugeList';
 import { ApolloClient, InMemoryCache, ApolloProvider, HttpLink, split } from '@apollo/client';
 import { WebSocketLink } from '@apollo/client/link/ws';
 import { getMainDefinition } from '@apollo/client/utilities'
@@ -64,6 +65,7 @@ export default function App() {
             <Stack.Navigator initialRouteName='AddTransaction'>
               <Stack.Screen name="AddTransaction" component={AddTransaction} />
               <Stack.Screen name="TransactionList" component={TransactionList} />
+              <Stack.Screen name="DisplayHugeList" component={DisplayHugeList} />
             </Stack.Navigator>
           </NavigationContainer>
          
